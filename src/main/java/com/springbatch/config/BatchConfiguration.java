@@ -106,13 +106,13 @@ public class BatchConfiguration {
     public ItemWriter<Product> flatFileItemWriter() {
 
         FlatFileItemWriter<Product> itemWriter = new FlatFileItemWriter<>();
-        itemWriter.setResource(new FileSystemResource("output/Product_Details_Output.csv"));
+        itemWriter.setResource(new FileSystemResource("src/main/resources/data/Product_Details_Output.csv"));
 
         DelimitedLineAggregator<Product> lineAggregator = new DelimitedLineAggregator<>();
         lineAggregator.setDelimiter(",");
 
         BeanWrapperFieldExtractor<Product> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(new String[] {"product_id","product_name","product_category","product_price"});
+        fieldExtractor.setNames(new String[] {"productId","productName","productCategory","productPrice"});
 
         lineAggregator.setFieldExtractor(fieldExtractor);
         itemWriter.setLineAggregator(lineAggregator);
@@ -125,14 +125,7 @@ public class BatchConfiguration {
 		return this.stepBuilderFactory.get("step1")
                 .<Product, Product>chunk(3)
                 .reader(jdbcPagingItemReader())
-                .writer(new ItemWriter<Product>() {
-                    @Override
-                    public void write(List<? extends Product> items) throws Exception {
-                        System.out.println("Chunk processing started...");
-                        items.forEach(System.out::println);
-                        System.out.println("Chunk processing ended.");
-                    }
-                }).build();
+                .writer(flatFileItemWriter()).build();
     }
 
 	@Bean
