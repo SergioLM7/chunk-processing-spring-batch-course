@@ -4,12 +4,14 @@ import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
 import com.springbatch.domain.ProductItemePreparedStatementSetter;
 import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
@@ -134,11 +136,17 @@ public class BatchConfiguration {
         return itemWriter;
     }
 
+    @Bean
+    public ItemProcessor<Product, Product> myProductItemProcessor() {
+        return new MyProductItemProcessor();
+    }
+
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
                 .<Product, Product>chunk(3)
                 .reader(jdbcPagingItemReader())
+                .processor(myProductItemProcessor())
                 .writer(jdbcBatchItemWriter()).build();
     }
 
