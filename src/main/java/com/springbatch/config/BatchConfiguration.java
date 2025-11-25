@@ -1,0 +1,144 @@
+package com.springbatch.config;
+
+import com.springbatch.domain.Product;
+import com.springbatch.domain.ProductFieldSetMapper;
+import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.reader.ProductNameItemReader;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
+import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileItemWriter;
+import org.springframework.batch.item.file.mapping.DefaultLineMapper;
+import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
+import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
+import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+
+import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
+
+@Configuration
+@EnableBatchProcessing
+public class BatchConfiguration {
+
+    @Autowired
+    private JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    private StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    public DataSource dataSource;
+
+    @Bean
+    public ItemReader<String> itemReader() {
+        List<String> productList = new ArrayList<>();
+        productList.add("Product1");
+        productList.add("Product2");
+        productList.add("Product3");
+        productList.add("Product4");
+        productList.add("Product5");
+
+        return new ProductNameItemReader(productList);
+    }
+
+    @Bean
+    public ItemReader<Product> flatFileItemReader() {
+        FlatFileItemReader<Product> itemReader = new FlatFileItemReader<>();
+        itemReader.setLinesToSkip(1);
+        itemReader.setResource(new ClassPathResource("/data/Product_details.csv"));
+
+        DefaultLineMapper<Product> lineMapper = new DefaultLineMapper<>();
+
+        DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
+        lineTokenizer.setNames("product_id","product_name","product_category","product_price");
+
+        lineMapper.setLineTokenizer(lineTokenizer);
+        lineMapper.setFieldSetMapper(new ProductFieldSetMapper());
+
+
+        itemReader.setLineMapper(lineMapper);
+
+        return itemReader;
+    }
+
+    @Bean
+    public ItemReader<Product> jdbcCursorItemReader() {
+        JdbcCursorItemReader<Product> itemReader = new JdbcCursorItemReader<>();
+        itemReader.setDataSource(dataSource);
+        itemReader.setSql("SELECT * FROM product_details ORDER BY product_id");
+        itemReader.setRowMapper(new ProductRowMapper());
+        return itemReader;
+    }
+
+    @Bean
+    public ItemReader<Product> jdbcPagingItemReader() throws Exception {
+        JdbcPagingItemReader<Product> itemReader = new JdbcPagingItemReader<>();
+        itemReader.setDataSource(dataSource);
+
+        SqlPagingQueryProviderFactoryBean factory = new SqlPagingQueryProviderFactoryBean();
+        factory.setDataSource(dataSource);
+        factory.setSelectClause("SELECT product_id, product_name, product_category, product_price");
+        factory.setFromClause("FROM product_details");
+        factory.setSortKey("product_id");
+
+        itemReader.setQueryProvider(factory.getObject());
+        itemReader.setRowMapper(new ProductRowMapper());
+        itemReader.setPageSize(3);
+
+        return itemReader;
+    }
+
+    @Bean
+    public ItemWriter<Product> flatFileItemWriter() {
+
+        FlatFileItemWriter<Product> itemWriter = new FlatFileItemWriter<>();
+        itemWriter.setResource(new FileSystemResource("output/Product_Details_Output.csv"));
+
+        DelimitedLineAggregator<Product> lineAggregator = new DelimitedLineAggregator<>();
+        lineAggregator.setDelimiter(",");
+
+        BeanWrapperFieldExtractor<Product> fieldExtractor = new BeanWrapperFieldExtractor<>();
+        fieldExtractor.setNames(new String[] {"product_id","product_name","product_category","product_price"});
+
+        lineAggregator.setFieldExtractor(fieldExtractor);
+        itemWriter.setLineAggregator(lineAggregator);
+
+        return itemWriter;
+    }
+
+	@Bean
+	public Step step1() throws Exception {
+		return this.stepBuilderFactory.get("step1")
+                .<Product, Product>chunk(3)
+                .reader(jdbcPagingItemReader())
+                .writer(new ItemWriter<Product>() {
+                    @Override
+                    public void write(List<? extends Product> items) throws Exception {
+                        System.out.println("Chunk processing started...");
+                        items.forEach(System.out::println);
+                        System.out.println("Chunk processing ended.");
+                    }
+                }).build();
+    }
+
+	@Bean
+	public Job firstJob() throws Exception {
+		return this.jobBuilderFactory.get("job1")
+                .start(step1())
+				.build();
+	}
+}
