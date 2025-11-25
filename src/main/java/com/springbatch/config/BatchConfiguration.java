@@ -2,6 +2,7 @@ package com.springbatch.config;
 
 import com.springbatch.domain.Product;
 import com.springbatch.domain.ProductFieldSetMapper;
+import com.springbatch.domain.ProductItemePreparedStatementSetter;
 import com.springbatch.domain.ProductRowMapper;
 import com.springbatch.reader.ProductNameItemReader;
 import org.springframework.batch.core.Job;
@@ -11,6 +12,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
@@ -27,6 +29,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
 import javax.sql.DataSource;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,12 +123,22 @@ public class BatchConfiguration {
         return itemWriter;
     }
 
+    @Bean
+    public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
+        JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<>();
+        itemWriter.setDataSource(dataSource);
+        itemWriter.setSql("INSERT INTO product_details_output values (?, ?, ?, ?)");
+        itemWriter.setItemPreparedStatementSetter(new ProductItemePreparedStatementSetter());
+
+        return itemWriter;
+    }
+
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
                 .<Product, Product>chunk(3)
                 .reader(jdbcPagingItemReader())
-                .writer(flatFileItemWriter()).build();
+                .writer(jdbcBatchItemWriter()).build();
     }
 
 	@Bean
