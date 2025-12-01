@@ -1,17 +1,24 @@
 package com.springbatch.processor;
 
+import com.springbatch.domain.OSProduct;
 import com.springbatch.domain.Product;
 import org.springframework.batch.item.ItemProcessor;
 
-public class MyProductItemProcessor implements ItemProcessor<Product, Product> {
+public class MyProductItemProcessor implements ItemProcessor<Product, OSProduct> {
 
     @Override
-    public Product process(Product item) throws Exception {
+    public OSProduct process(Product item) throws Exception {
         System.out.println("Processor executed.");
-        double price = item.getProductPrice();
 
-        item.setProductPrice(price - (price*0.10));
+        OSProduct osProduct = new OSProduct();
+        osProduct.setProductId(item.getProductId());
+        osProduct.setProductName(item.getProductName());
+        osProduct.setProductCategory(item.getProductCategory());
+        osProduct.setProductPrice(item.getProductPrice());
+        osProduct.setTaxPerncentage(item.getProductCategory().equals("Sports Accesories") ? 5 : 18);
+        osProduct.setSku(item.getProductCategory().substring(0,3) + item.getProductId());
+        osProduct.setShippingRate(item.getProductPrice() < 1000 ? 75 : 0);
 
-        return item;
+        return osProduct;
     }
 }

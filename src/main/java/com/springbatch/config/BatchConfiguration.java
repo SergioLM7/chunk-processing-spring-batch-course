@@ -1,9 +1,6 @@
 package com.springbatch.config;
 
-import com.springbatch.domain.Product;
-import com.springbatch.domain.ProductFieldSetMapper;
-import com.springbatch.domain.ProductItemePreparedStatementSetter;
-import com.springbatch.domain.ProductRowMapper;
+import com.springbatch.domain.*;
 import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 import org.springframework.batch.core.Job;
@@ -126,7 +123,7 @@ public class BatchConfiguration {
         return itemWriter;
     }
 
-    @Bean
+   /* @Bean
     public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
         JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setDataSource(dataSource);
@@ -134,17 +131,27 @@ public class BatchConfiguration {
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
+    }*/
+
+    @Bean
+    public JdbcBatchItemWriter<OSProduct> jdbcBatchItemWriter() {
+        JdbcBatchItemWriter<OSProduct> itemWriter = new JdbcBatchItemWriter<>();
+        itemWriter.setDataSource(dataSource);
+        itemWriter.setSql("INSERT INTO os_product_details values (:productId, :productName, :productCategory, :productPrice, :taxPerncentage, :sku, :shippingRate)");
+        itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
+
+        return itemWriter;
     }
 
     @Bean
-    public ItemProcessor<Product, Product> myProductItemProcessor() {
+    public ItemProcessor<Product, OSProduct> myProductItemProcessor() {
         return new MyProductItemProcessor();
     }
 
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
-                .<Product, Product>chunk(3)
+                .<Product, OSProduct>chunk(3)
                 .reader(jdbcPagingItemReader())
                 .processor(myProductItemProcessor())
                 .writer(jdbcBatchItemWriter()).build();
