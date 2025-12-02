@@ -1,10 +1,15 @@
 package com.springbatch.domain;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Pattern;
+
 public class Product {
 
     private Integer productId;
     private String productName;
+    @Pattern(regexp = "Mobile Phones|Tablets|Televisions|Sports Accessories")
     private String productCategory;
+    @Max(100000)
     private double productPrice;
 
     public Integer getProductId() {

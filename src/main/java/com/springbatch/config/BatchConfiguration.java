@@ -23,6 +23,7 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
 import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -154,10 +155,16 @@ public class BatchConfiguration {
         return new MyProductItemProcessor();
     }
 
+//    @Bean
+//    public ValidatingItemProcessor<Product> validateItemProcessor() {
+//        ValidatingItemProcessor<Product> validatingItemProcessor = new ValidatingItemProcessor<>(new ProductValidator());
+//        validatingItemProcessor.setFilter(true);
+//        return validatingItemProcessor;
+//    }
+
     @Bean
-    public ValidatingItemProcessor<Product> validateItemProcessor() {
-        ValidatingItemProcessor<Product> validatingItemProcessor = new ValidatingItemProcessor<>(new ProductValidator());
-        validatingItemProcessor.setFilter(true);
+    public BeanValidatingItemProcessor<Product> validateItemProcessor() {
+        BeanValidatingItemProcessor<Product> validatingItemProcessor = new BeanValidatingItemProcessor<>();
         return validatingItemProcessor;
     }
 
