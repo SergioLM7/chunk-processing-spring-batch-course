@@ -156,7 +156,9 @@ public class BatchConfiguration {
 
     @Bean
     public ValidatingItemProcessor<Product> validateItemProcessor() {
-        return new ValidatingItemProcessor<>(new ProductValidator());
+        ValidatingItemProcessor<Product> validatingItemProcessor = new ValidatingItemProcessor<>(new ProductValidator());
+        validatingItemProcessor.setFilter(true);
+        return validatingItemProcessor;
     }
 
 	@Bean
