@@ -23,6 +23,7 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -153,12 +154,17 @@ public class BatchConfiguration {
         return new MyProductItemProcessor();
     }
 
+    @Bean
+    public ValidatingItemProcessor<Product> validateItemProcessor() {
+        return new ValidatingItemProcessor<>(new ProductValidator());
+    }
+
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
                 .<Product, Product>chunk(3)
                 .reader(jdbcPagingItemReader())
-                .processor(filterProductItemProcessor())
+                .processor(validateItemProcessor())
                 .writer(jdbcBatchItemWriter()).build();
     }
 
