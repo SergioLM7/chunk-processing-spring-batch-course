@@ -1,6 +1,7 @@
 package com.springbatch.config;
 
 import com.springbatch.domain.*;
+import com.springbatch.processor.FilterProductItemProcessor;
 import com.springbatch.processor.MyProductItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 import org.springframework.batch.core.Job;
@@ -29,7 +30,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,7 +123,7 @@ public class BatchConfiguration {
         return itemWriter;
     }
 
-   /* @Bean
+    @Bean
     public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
         JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setDataSource(dataSource);
@@ -131,9 +131,9 @@ public class BatchConfiguration {
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
-    }*/
+    }
 
-    @Bean
+    /*@Bean
     public JdbcBatchItemWriter<OSProduct> jdbcBatchItemWriter() {
         JdbcBatchItemWriter<OSProduct> itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setDataSource(dataSource);
@@ -141,6 +141,11 @@ public class BatchConfiguration {
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
+    }*/
+
+    @Bean
+    public ItemProcessor<Product, Product> filterProductItemProcessor() {
+        return new FilterProductItemProcessor();
     }
 
     @Bean
@@ -151,9 +156,9 @@ public class BatchConfiguration {
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
-                .<Product, OSProduct>chunk(3)
+                .<Product, Product>chunk(3)
                 .reader(jdbcPagingItemReader())
-                .processor(myProductItemProcessor())
+                .processor(filterProductItemProcessor())
                 .writer(jdbcBatchItemWriter()).build();
     }
 
