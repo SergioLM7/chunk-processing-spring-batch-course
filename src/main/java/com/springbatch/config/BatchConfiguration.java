@@ -2,7 +2,7 @@ package com.springbatch.config;
 
 import com.springbatch.domain.*;
 import com.springbatch.processor.FilterProductItemProcessor;
-import com.springbatch.processor.MyProductItemProcessor;
+import com.springbatch.processor.TransformItemProcessor;
 import com.springbatch.reader.ProductNameItemReader;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -23,8 +23,8 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
-import org.springframework.batch.item.validator.ValidatingItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -125,7 +125,7 @@ public class BatchConfiguration {
         return itemWriter;
     }
 
-    @Bean
+/*    @Bean
     public JdbcBatchItemWriter<Product> jdbcBatchItemWriter() {
         JdbcBatchItemWriter<Product> itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setDataSource(dataSource);
@@ -133,9 +133,9 @@ public class BatchConfiguration {
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
-    }
+    }*/
 
-    /*@Bean
+    @Bean
     public JdbcBatchItemWriter<OSProduct> jdbcBatchItemWriter() {
         JdbcBatchItemWriter<OSProduct> itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setDataSource(dataSource);
@@ -143,7 +143,7 @@ public class BatchConfiguration {
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
-    }*/
+    }
 
     @Bean
     public ItemProcessor<Product, Product> filterProductItemProcessor() {
@@ -151,8 +151,8 @@ public class BatchConfiguration {
     }
 
     @Bean
-    public ItemProcessor<Product, OSProduct> myProductItemProcessor() {
-        return new MyProductItemProcessor();
+    public ItemProcessor<Product, OSProduct> transformItemProcessor() {
+        return new TransformItemProcessor();
     }
 
 //    @Bean
@@ -169,12 +169,23 @@ public class BatchConfiguration {
         return validatingItemProcessor;
     }
 
+    @Bean
+    public CompositeItemProcessor<Product, OSProduct> itemProcessor(){
+        CompositeItemProcessor<Product, OSProduct> processor = new CompositeItemProcessor<>();
+        List itemProcessorsList = new ArrayList<>();
+        itemProcessorsList.add(validateItemProcessor());
+        itemProcessorsList.add(filterProductItemProcessor());
+        itemProcessorsList.add(transformItemProcessor());
+        processor.setDelegates(itemProcessorsList);
+        return processor;
+    }
+
 	@Bean
 	public Step step1() throws Exception {
 		return this.stepBuilderFactory.get("step1")
-                .<Product, Product>chunk(3)
+                .<Product, OSProduct>chunk(3)
                 .reader(jdbcPagingItemReader())
-                .processor(validateItemProcessor())
+                .processor(itemProcessor())
                 .writer(jdbcBatchItemWriter()).build();
     }
 

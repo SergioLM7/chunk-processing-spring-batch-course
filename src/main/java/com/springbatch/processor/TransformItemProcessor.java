@@ -4,11 +4,11 @@ import com.springbatch.domain.OSProduct;
 import com.springbatch.domain.Product;
 import org.springframework.batch.item.ItemProcessor;
 
-public class MyProductItemProcessor implements ItemProcessor<Product, OSProduct> {
+public class TransformItemProcessor implements ItemProcessor<Product, OSProduct> {
 
     @Override
     public OSProduct process(Product item) throws Exception {
-        System.out.println("Processor executed.");
+        System.out.println("TransformItemProcessor executed.");
 
         OSProduct osProduct = new OSProduct();
         osProduct.setProductId(item.getProductId());
